@@ -136,16 +136,22 @@ fi
 # the pipe; only numeric counters are kept. No logging, backups or command output.
 journal_status='unavailable'; sampled_oom='null'; sampled_io='null'; sampled_kernel_errors='null'
 if command -v journalctl >/dev/null 2>&1 && command -v timeout >/dev/null 2>&1; then
+  # Both commands must succeed. A failed or timed-out query MUST stay
+  # unavailable; it must never produce a misleading count of zero incidents.
   if timeout 5 journalctl -b -k -n 1 --no-pager -o cat >/dev/null 2>&1; then
-    counters=$(timeout 8 journalctl -b -k -p 0..3 --since '-24 hours' -n 300 --no-pager -o cat 2>/dev/null | awk '
-      {n++; line=tolower($0);
-       if (line ~ /out of memory|oom-killer|killed process/) oom++;
-       if (line ~ /i\/o error|blk_update_request|nvme.*timeout|ext4-fs error|xfs.*corrupt/) io++ }
-      END {printf "%d %d %d",oom+0,io+0,n+0}')
-    set -- $counters
-    if [ "$#" -eq 3 ]; then
-      sampled_oom=$(num "$1"); sampled_io=$(num "$2"); sampled_kernel_errors=$(num "$3")
-      journal_status='sampled'
+    if kernel_lines=$(timeout 8 journalctl -b -k -p 0..3 --since '-24 hours' -n 300 --no-pager -o cat 2>/dev/null); then
+      counters=$(printf '%s\n' "$kernel_lines" | awk '
+        NF>0 {n++; line=tolower($0);
+          if (line ~ /out of memory|oom-killer|killed process/) oom++;
+          if (line ~ /i\/o error|blk_update_request|nvme.*timeout|ext4-fs error|xfs.*corrupt/) io++ }
+        END {printf "%d %d %d",oom+0,io+0,n+0}')
+      # Do not store or print kernel_lines; only counts reach the JSON.
+      kernel_lines=''
+      set -- $counters
+      if [ "$#" -eq 3 ]; then
+        sampled_oom=$(num "$1"); sampled_io=$(num "$2"); sampled_kernel_errors=$(num "$3")
+        journal_status='sampled'
+      fi
     fi
   fi
 fi
