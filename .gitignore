@@ -19,3 +19,5 @@ __pycache__/
 *.swp
 *.tmp
 .DS_Store
+/serverdiag-*.json
+/diagnostico-compartible-*.json
