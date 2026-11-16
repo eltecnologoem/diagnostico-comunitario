@@ -37,6 +37,92 @@ La guía completa incluye recolección SSH **optativa** mediante stdin, pruebas 
 
 **Estado:** código inicial funcional de laboratorio; aún no es una edición auditada o certificada para servidores de producción.
 
+## Uso rápido: comando de diagnóstico
+
+Clona el repositorio, revisa el script y ejecútalo desde Linux (POSIX `sh`). **No requiere cuenta, SMTP ni acceso a Internet.** Por defecto no envía nada:
+
+```bash
+git clone https://github.com/eltecnologoem/diagnostico-comunitario.git
+cd diagnostico-comunitario
+sh -n bin/serverdiag.sh
+sh bin/serverdiag.sh
+```
+
+Se genera `serverdiag-FECHA-PID.json` en la carpeta actual, con permisos privados `0600`.
+
+### Diagnóstico parcial: `--only`
+
+Puedes ejecutar únicamente las comprobaciones que interesan, separando las secciones con comas:
+
+```bash
+sh bin/serverdiag.sh --only system
+sh bin/serverdiag.sh --only memory,disk
+sh bin/serverdiag.sh --only database
+sh bin/serverdiag.sh --only processes
+sh bin/serverdiag.sh --only system,memory,disk,database,processes
+sh bin/serverdiag.sh --only disk --output ./mi-diagnostico.json
+```
+
+| Sección | Qué comprueba |
+|---|---|
+| `system` | Kernel/identidad básica, tiempo encendido, CPU y carga |
+| `memory` | Memoria RAM y swap |
+| `disk` | Tamaño y ocupación de la partición raíz |
+| `database` | Clientes MySQL/MariaDB disponibles, procesos y escucha TCP 3306 |
+| `processes` | Recuento de procesos SSH (`sshd`) |
+
+**Importante:** una sección excluida no se ejecuta: sus métricas quedan en `null` y sus comprobaciones en `skipped` cuando corresponde. La identificación mínima de origen sigue apareciendo en el JSON **privado**, independientemente de `--only`. El exportador compartible elimina esos identificadores.
+
+Opciones adicionales:
+
+```bash
+sh bin/serverdiag.sh --help
+sh bin/serverdiag.sh --stdout                    # JSON privado por stdout; no envía nada
+sh bin/serverdiag.sh --app-dir /usr/local/APP     # verifica binarios MySQL embebidos
+```
+
+### Envío de reporte por correo (opcional y explícito)
+
+El correo **no está habilitado por defecto**. Requiere Python 3, acceso a un SMTP con TLS y una configuración privada `.env`. El original privado se queda en el equipo; **solo se adjunta una copia compartible con campos permitidos**. No se adjuntan logs, hostname, IP ni variables de entorno.
+
+1. Prepara el archivo de configuración:
+
+```bash
+cp .env.example .env
+chmod 600 .env
+nano .env
+```
+
+2. Completa los campos de `.env` (ejemplo; sustituye por datos reales):
+
+```dotenv
+SMTP_HOST=smtp.example.org
+SMTP_PORT=587
+SMTP_SECURITY=starttls
+SMTP_USER=cuenta@example.org
+SMTP_PASSWORD=CLAVE_DE_APLICACION
+MAIL_FROM=cuenta@example.org
+MAIL_TO=destinatario@example.org
+```
+
+`SMTP_SECURITY` admite `starttls` o `ssl`; para SSL suele utilizarse el puerto 465. Nunca se permite SMTP sin cifrado. Usa una contraseña de aplicación cuando el proveedor lo requiera. El archivo `.env` **no se ejecuta como código shell** y se rechaza si puede leerlo otro usuario (permisos distintos de 0600).
+
+3. Ejecuta un diagnóstico con envío expreso:
+
+```bash
+sh bin/serverdiag.sh --only system,memory,disk --email
+```
+
+Alternativamente, indica otro archivo de credenciales:
+
+```bash
+sh bin/serverdiag.sh --only database --email --env /ruta/privada/correo.env
+```
+
+Si SMTP falla, **el informe privado ya generado no se elimina** y el comando termina con error. Los datos salen únicamente cuando se indica `--email`. El correo convencional no garantiza cifrado extremo a extremo: usa un buzón cuyo propietario deba recibir esas métricas.
+
+Consulta [la documentación técnica y las limitaciones](docs/collector.md). El envío SMTP es un mecanismo de **salida opt-in**, no monitoreo ni distribución automática a terceros.
+
 ## ¿Por qué nace este proyecto?
 
 Diagnosticar un servidor Linux que deja de responder suele implicar conectarse por SSH, ejecutar múltiples comandos, revisar registros incompletos y tratar de reconstruir qué sucedió antes de una caída. Después de reiniciar, el sistema puede parecer normal y la evidencia más importante haberse perdido.
