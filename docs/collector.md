@@ -96,3 +96,67 @@ Las pruebas offline validan sintaxis POSIX, salida JSON, permisos, no sobrescrit
 - Sin cambios a red, firewall o servicios.
 - Separar evidencia observada, hipótesis y recomendaciones.
 - Un reporte ausente no prueba que un servidor esté caído.
+
+
+## Selección de secciones (`--only`)
+
+El recolector admite una lista separada por comas: `system`, `memory`, `disk`, `database`, `processes`. Cuando se omite `--only` se seleccionan todas. Las secciones no seleccionadas se omiten, con métricas `null` y estado `skipped` cuando corresponda. La identidad del equipo sigue apareciendo en el informe **privado**, pero el exportador no la copia a la versión compartible.
+
+```sh
+sh bin/serverdiag.sh --only system
+sh bin/serverdiag.sh --only memory,disk
+sh bin/serverdiag.sh --only database --app-dir /usr/local/APP
+sh bin/serverdiag.sh --only processes --output ./procesos.json
+```
+
+El recolector no consulta bases de datos, no lee logs crudos ni ejecuta pruebas activas de conectividad de red. Las comprobaciones de `database` revisan la presencia de clientes, procesos y escucha TCP local, no el éxito de autenticación ni la salud real del motor.
+
+## Envío voluntario por correo electrónico (SMTP)
+
+**Desactivado por defecto.** No se configura con `source .env` ni con ninguna forma de ejecución de shell: el programa Python lee el archivo como texto y solo admite claves conocidas. El envío se activa únicamente con `--email` y requiere Python 3.
+
+```sh
+cp .env.example .env
+chmod 600 .env
+nano .env
+```
+
+Contenido de ejemplo:
+
+```dotenv
+SMTP_HOST=smtp.example.org
+SMTP_PORT=587
+SMTP_SECURITY=starttls
+SMTP_USER=cuenta@example.org
+SMTP_PASSWORD=CLAVE_O_PASSWORD_DE_APLICACION
+MAIL_FROM=cuenta@example.org
+MAIL_TO=destinatario@example.org
+```
+
+Selecciona `SMTP_SECURITY=starttls` para negociación TLS explícita o `SMTP_SECURITY=ssl` para TLS desde el principio, comúnmente en puerto 465. No existe un modo de transporte SMTP plano sin cifrado. El cliente comprueba los certificados mediante las raíces confiables del sistema y no intenta una conexión no cifrada como alternativa si TLS falla.
+
+Ejemplo de ejecución:
+
+```sh
+sh bin/serverdiag.sh --only disk,memory --email
+sh bin/serverdiag.sh --only database --email --env /ruta/privada/smtp.env
+```
+
+El informe completo se guarda en el servidor antes de intentar SMTP. El correo incluye **exclusivamente un JSON compartible construido por allowlist**, adjunto con nombre genérico, y sin hostname, IP, ID de ejecución, logs o rutas. La exportación falla si detecta un esquema inesperado o indicadores de contenido sensible. No se crea una copia temporal compartible en disco durante el envío.
+
+### Seguridad y limitaciones
+
+- Un `.env` con permisos de lectura para grupo u otros usuarios se rechaza. No lo incluyas en GitHub ni en tickets.
+- El correo viaja usando TLS hasta el servidor SMTP, pero **no garantiza cifrado extremo a extremo** ni impide que el proveedor o los destinatarios vean el archivo compartible.
+- Los campos numéricos permitidos pueden revelar información operacional agregada; revisa el destinatario y la política de privacidad.
+- Cuando el servidor SMTP no responde o no autentica, el comando devuelve error y el **JSON privado permanece disponible localmente**. No hay reintentos autónomos ni tareas programadas.
+- Con `--stdout` no es posible activar `--email`. La opción `--env` sin `--email` también se rechaza.
+- La configuración solo se consulta al utilizar `--email`; la simple presencia de `.env` nunca provoca una conexión saliente.
+
+### Pruebas adicionales
+
+```sh
+python3 -m unittest discover -s tests -v
+```
+
+El conjunto incluye comprobaciones de selección parcial, rechazo de opciones desconocidas, configuración de correo con permisos inseguros, rechazo de transporte sin TLS y adjuntos sin identificadores. Las pruebas SMTP utilizan un doble simulado; **no prueban entregabilidad real ni servidores de correo específicos**.
