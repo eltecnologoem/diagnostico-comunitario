@@ -16,6 +16,18 @@ Este proyecto está en **fase de prototipo comunitario**. Aún no hay una versi�
 
 Consulta el [diseño y checklist de aislamiento para Codex](docs/codex-secure-workflow.md). Su estado es **propuesto y pendiente de implementación y auditoría**. No presentamos esta arquitectura como garantía ya disponible.
 
+## Auditoría extendida y hardening: límites obligatorios
+
+- `bin/audit-extended.sh` y el comando `diagnostico.py auditar` son **exclusivamente de lectura**. Nunca pueden ejecutar reinicios, modificaciones del sistema, instalaciones o ajustes del firewall/SSH.
+- Los valores de `sshd -T` describen la configuración global efectiva, **no las excepciones por `Match` ni la seguridad de cada usuario**. Un control `unavailable` o `null` jamás se considera conforme o seguro.
+- Los conteos de journal son muestras limitadas; si la consulta falla, el valor debe ser `null` / `unavailable`, **no cero**. No exportar líneas crudas, nombres de usuarios o servicios, ni trazas.
+- `tools/hardening.py` es una utilidad separada y potencialmente modificadora. `--plan` no modifica; `--apply` y `--rollback` solo se pueden usar en una terminal interactiva autorizada, desde Debian/Ubuntu, como root y con un plan de recuperación. **Nunca invocarlas desde Codex, MCP, SSH automatizado o jobs**.
+- La aplicación está restringida a cuatro controles `sysctl`; no afecta por diseño `sshd_config`, UFW, nftables, rutas, APT, cuentas ni servicios. **La compatibilidad con el workload debe evaluarse antes de cualquier cambio**.
+- Debe existir snapshot antes del cambio, registro de ID, comprobación de estado posterior y rollback verificable. Si el archivo gestionado fue modificado por un tercero, bloquear la reversión automática.
+- Las pruebas actuales son de laboratorio con cambios simulados. No constituyen certificación CIS, prueba en servidores de producción ni garantía de ausencia de efectos colaterales.
+
+Guía: [Auditoría extendida y hardening Debian/Ubuntu](docs/auditoria-hardening.md).
+
 ## Cómo reportar una vulnerabilidad de manera privada
 
 **No publiques vulnerabilidades sin corregir, pruebas de explotación, credenciales ni diagnósticos reales en Issues, Discussions o pull requests públicos.**
