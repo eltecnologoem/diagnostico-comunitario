@@ -33,7 +33,7 @@ Una vez configurado, desde **una terminal local de confianza, no dentro del ento
 ```sh
 python3 diagnostico.py ejecutar --perfil servidor-01
 python3 diagnostico.py ejecutar --perfil servidor-01 --only memory,disk
-python3 diagnostico.py ejecutar --local              # solo Linux/macOS con soporte Linux /proc
+python3 diagnostico.py ejecutar --local              # solo Linux
 python3 diagnostico.py guias                     # guías públicas sin datos reales
 python3 diagnostico.py guias --codigo DC-DISK-001
 ```
