@@ -98,8 +98,11 @@ class SelectiveAndMailTests(unittest.TestCase):
             attachment_text = attachment.get_content().decode("utf-8")
             parsed = json.loads(attachment_text)
             self.assertEqual(parsed["report_type"], "share")
-            self.assertNotIn("hostname", attachment_text)
+            private_hostname = json.loads(private.read_text())["source"]["hostname"]
+            self.assertNotIn(private_hostname, attachment_text)
             self.assertNotIn("run_id", attachment_text)
+            self.assertNotIn("source", parsed)
+            self.assertTrue(parsed["omissions"]["hostnames"])
             self.assertEqual(set(parsed), {"schema_version", "report_type", "collected_at",
                                            "summary", "findings", "omissions"})
 
