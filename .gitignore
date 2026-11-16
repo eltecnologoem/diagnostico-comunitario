@@ -1,0 +1,21 @@
+# Diagnósticos reales y datos sensibles generados localmente
+/reports/
+/captures/
+/private/
+/secrets/
+/diagnosticos/
+/diagnostico-*.json
+/diagnostic-*.json
+*.private.json
+.env
+.env.*
+!.env.example
+*.log
+
+# Caché y temporales
+__pycache__/
+.pytest_cache/
+*.pyc
+*.swp
+*.tmp
+.DS_Store
