@@ -40,3 +40,12 @@ La línea `diagnostico.py estado` devuelve únicamente un estado genérico y tam
 ## Qué decir al usuario al terminar
 
 Indica si la herramienta está disponible, qué pasos seguir en su terminal privada y qué guía general puede consultar; no informes que has visto su diagnóstico si no tuviste acceso (en modo estricto no lo tienes).
+
+## Auditoría extendida y hardening (v0.3)
+
+- Puede explicar las guías **públicas** de `docs/auditoria-hardening.md` y las diferencias entre auditoría, plan y cambios de hardening.
+- No ejecutar `tools/hardening.py --apply` ni `--rollback`; esas acciones requieren operador y consola de confianza, no una decisión del modelo.
+- No solicitar ni leer resultados privados de `bin/audit-extended.sh` ni reproducir detalles reales de un host en el prompt.
+- Recomendar al operador que lance desde una terminal fuera de Codex: `python3 diagnostico.py auditar --local` o `--perfil ALIAS`; los informes se visualizan localmente.
+- El estado `null` / `unavailable` **no** demuestra cumplimiento de medidas de seguridad.
+- No prescribir cambios de SSH/firewall sin verificar accesos de respaldo, dependencias y rollback.
