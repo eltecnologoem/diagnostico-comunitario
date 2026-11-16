@@ -205,7 +205,7 @@ La política de divulgación de vulnerabilidades se documentará en `SECURITY.md
 
 Este repositorio comienza como **punto de coordinación público**. El código de julio debe recuperarse, revisarse y probarse antes de incorporarlo: no asumimos que exista una edición comunitaria lista para producción.
 
-Se aceptarán propuestas de arquitectura, esquemas, pruebas y mejoras mediante issues y pull requests una vez establecidas las guías de contribución. La licencia del código se elegirá y publicará antes de distribuir una primera versión open source; **que un repositorio sea público no concede por sí solo una licencia de reutilización**.
+Se aceptarán propuestas de arquitectura, esquemas, pruebas y mejoras mediante issues y pull requests una vez establecidas las guías de contribución. El proyecto se distribuye bajo la **[Apache License, Version 2.0](LICENSE)**. Puedes usar, modificar y redistribuir el código —incluso comercialmente— cumpliendo sus condiciones, incluyendo la conservación de avisos legales y la atribución correspondiente. Las contribuciones deberán respetar esta licencia.
 
 ## Autoría y contacto
 
