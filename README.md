@@ -6,6 +6,37 @@
 **Sitio del proyecto y divulgación:** [eliezermolina.org](https://eliezermolina.org)  
 **Estado del repositorio:** fase de diseño y preparación del código comunitario; las funciones descritas a continuación constituyen objetivos, no funcionalidades ya certificadas.
 
+## Primer prototipo ejecutable: diagnóstico local
+
+Ya está disponible un **prototipo v0.1.0 para pruebas**. En Linux, desde el repositorio clonado y tras revisar el script:
+
+```sh
+sh bin/serverdiag.sh
+```
+
+Crea un JSON privado en el directorio actual, con permisos `0600` y **sin realizar conexiones salientes**. También puedes descargar únicamente el script para inspeccionarlo:
+
+```sh
+curl -fL --output serverdiag.sh https://raw.githubusercontent.com/eltecnologoem/diagnostico-comunitario/main/bin/serverdiag.sh
+sh -n serverdiag.sh
+sh serverdiag.sh
+```
+
+Para generar un JSON compartible (sin host, IP, ID persistente ni logs) usando Python 3 local:
+
+```sh
+python3 tools/export-share.py serverdiag-FECHA-PID.json
+```
+
+La guía completa incluye recolección SSH **optativa** mediante stdin, pruebas de conectividad separadas y una suite de pruebas:
+
+- [Instrucciones y límites del recolector](docs/collector.md)
+- [Colector local POSIX sh](bin/serverdiag.sh)
+- [Exportador seguro](tools/export-share.py)
+- [Pruebas offline](tests/test_collector.py)
+
+**Estado:** código inicial funcional de laboratorio; aún no es una edición auditada o certificada para servidores de producción.
+
 ## ¿Por qué nace este proyecto?
 
 Diagnosticar un servidor Linux que deja de responder suele implicar conectarse por SSH, ejecutar múltiples comandos, revisar registros incompletos y tratar de reconstruir qué sucedió antes de una caída. Después de reiniciar, el sistema puede parecer normal y la evidencia más importante haberse perdido.
