@@ -95,10 +95,11 @@ class SelectiveAndMailTests(unittest.TestCase):
             msg = mod.build_message(private, "a@example.org", "b@example.org")
             self.assertEqual(len(msg.get_payload()), 2)
             attachment = msg.get_payload()[1]
-            parsed = json.loads(attachment.get_content())
+            attachment_text = attachment.get_content().decode("utf-8")
+            parsed = json.loads(attachment_text)
             self.assertEqual(parsed["report_type"], "share")
-            self.assertNotIn("hostname", attachment.get_content())
-            self.assertNotIn("run_id", attachment.get_content())
+            self.assertNotIn("hostname", attachment_text)
+            self.assertNotIn("run_id", attachment_text)
             self.assertEqual(set(parsed), {"schema_version", "report_type", "collected_at",
                                            "summary", "findings", "omissions"})
 
