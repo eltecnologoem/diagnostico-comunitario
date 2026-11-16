@@ -215,6 +215,11 @@ def rollback(operation_id):
         previous=state['previous_runtime']
         if not isinstance(previous,dict) or any(k not in CONTROLS or not re.fullmatch(r'\d{1,3}',v) for k,v in previous.items()):
             raise HardeningError('Respaldo contiene valores inesperados')
+        # Do not overwrite runtime state changed by an administrator after
+        # this operation. Require manual reconciliation instead.
+        for k in previous:
+            if current(k) != CONTROLS[k][0]:
+                raise HardeningError('Estado runtime modificado por otro operador; rollback automático bloqueado')
         if old is None: MANAGED.unlink()
         else: atomic_write(MANAGED,old)
         for k,v in previous.items(): set_runtime(k,v)
