@@ -227,8 +227,8 @@ def collect(home: Path, only: str, profile: dict | None):
     if not COLLECTOR.is_file():
         raise DiagnosticError('No se encontró el colector Bash del proyecto')
     if profile is None:
-        if os.name == 'nt':
-            raise DiagnosticError('Diagnóstico local requiere Linux; en Windows utiliza SSH')
+        if not sys.platform.startswith('linux'):
+            raise DiagnosticError('Diagnóstico local requiere Linux; desde Windows o macOS utiliza SSH hacia Linux')
         if not shutil.which('sh'):
             raise DiagnosticError('Este equipo no dispone de sh')
         argv = ['sh', str(COLLECTOR), '--stdout', '--only', only]
