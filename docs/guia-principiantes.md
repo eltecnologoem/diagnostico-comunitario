@@ -5,7 +5,7 @@
 ## Requisitos
 
 - Python 3.9 o superior en el equipo donde se ejecuta el asistente.
-- Linux o macOS si deseas diagnosticar la misma computadora. Para diagnosticar un Linux remoto desde Windows/macOS/Linux, tener OpenSSH instalado.
+- Linux si deseas diagnosticar la misma computadora. Desde Windows o macOS, el asistente permite diagnosticar un servidor Linux remoto mediante OpenSSH.
 - Cuenta SSH autorizada, preferiblemente con permisos limitados, con acceso a `/proc`, `df`, `ps` y `ss` según la configuración del servidor.
 - Clona y revisa el repositorio. No ejecutes scripts descargados a ciegas. No hagas pruebas en servidores ajenos.
 
