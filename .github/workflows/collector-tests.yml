@@ -1,0 +1,24 @@
+name: Collector tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  offline-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Verify shell syntax
+        run: |
+          sh -n bin/serverdiag.sh
+          sh -n bin/probe-connectivity.sh
+          sh -n bin/remote-collect.sh
+      - name: Run offline collector and privacy tests
+        run: python3 -m unittest discover -s tests -v
