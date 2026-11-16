@@ -1,0 +1,302 @@
+[
+  {
+    "code": "DC-DISK-001",
+    "title": "Disco raíz con ocupación elevada",
+    "category": "disk",
+    "automatic": true,
+    "severity": "warning",
+    "checks": [
+      "Revisar el uso por sistemas de archivos y distinguir bloques reservados de datos realmente disponibles.",
+      "Confirmar qué directorios crecen mediante herramientas de solo lectura como du, bajo autorización local.",
+      "Comprobar políticas de retención de logs y backups antes de proponer limpieza."
+    ],
+    "warnings": [
+      "No borrar /var/log, backups ni datos de aplicaciones sin conocer su función."
+    ]
+  },
+  {
+    "code": "DC-DISK-002",
+    "title": "Disco raíz en ocupación crítica",
+    "category": "disk",
+    "automatic": true,
+    "severity": "critical",
+    "checks": [
+      "Verificar espacio disponible en la partición raíz y riesgo de escrituras fallidas.",
+      "Revisar si el problema afecta a sistema de archivos, inodos o archivos borrados aún abiertos.",
+      "Planificar expansión o limpieza específica validada, con backup y rollback."
+    ],
+    "warnings": [
+      "No usar comandos de borrado masivo ni truncar logs sin autorización."
+    ]
+  },
+  {
+    "code": "DC-MEM-001",
+    "title": "Memoria disponible baja",
+    "category": "memory",
+    "automatic": true,
+    "severity": "warning",
+    "checks": [
+      "Comparar MemAvailable con memoria total y observar tendencia en varias capturas.",
+      "Investigar si existe swap y si aumentan errores de aplicaciones.",
+      "Examinar procesos consumidores con herramientas locales autorizadas, sin recopilar argumentos que contengan secretos."
+    ],
+    "warnings": [
+      "Memoria cacheada en Linux no equivale automáticamente a memoria desperdiciada."
+    ]
+  },
+  {
+    "code": "DC-MEM-002",
+    "title": "Memoria disponible muy baja",
+    "category": "memory",
+    "automatic": true,
+    "severity": "critical",
+    "checks": [
+      "Verificar si hay signos de agotamiento, reinicios o procesos terminados por el kernel.",
+      "Comparar la disponibilidad con el comportamiento de servicios.",
+      "Evaluar reducción de carga o ampliación de capacidad mediante plan de cambio."
+    ],
+    "warnings": [
+      "No reiniciar servicios ni modificar sysctl de manera automática."
+    ]
+  },
+  {
+    "code": "DC-MEM-003",
+    "title": "Alta utilización de swap",
+    "category": "memory",
+    "automatic": true,
+    "severity": "warning",
+    "checks": [
+      "Comprobar MemAvailable además del uso de swap.",
+      "Observar actividad real de swap, no solo ocupación, mediante monitoreo local autorizado.",
+      "Correlacionar picos con carga de aplicaciones."
+    ],
+    "warnings": [
+      "Swap utilizada no prueba por sí sola que exista presión actual de memoria."
+    ]
+  },
+  {
+    "code": "DC-SYS-001",
+    "title": "Load average elevado en relación con CPU",
+    "category": "system",
+    "automatic": true,
+    "severity": "warning",
+    "checks": [
+      "Comparar load average de varios intervalos con el número de CPUs lógicas.",
+      "Investigar tareas en estado no interrumpible y uso de I/O.",
+      "Comparar con métricas previas para diferenciar un pico aislado de un problema persistente."
+    ],
+    "warnings": [
+      "Load average no es sinónimo de porcentaje de CPU; también refleja tareas bloqueadas."
+    ]
+  },
+  {
+    "code": "DC-SYS-002",
+    "title": "Arranque reciente del sistema",
+    "category": "system",
+    "automatic": true,
+    "severity": "info",
+    "checks": [
+      "Corroborar hora de arranque mediante información local.",
+      "Revisar con autorización el historial de reinicios para distinguir mantenimiento de incidente.",
+      "Buscar eventos anteriores al arranque si los registros persistentes existen."
+    ],
+    "warnings": [
+      "Un uptime corto no demuestra que el equipo se haya caído."
+    ]
+  },
+  {
+    "code": "DC-DB-001",
+    "title": "Proceso de base de datos sin escucha TCP 3306",
+    "category": "database",
+    "automatic": true,
+    "severity": "info",
+    "checks": [
+      "Verificar la configuración prevista del motor y el puerto, sin revelar secretos.",
+      "Comprobar si la aplicación utiliza un socket Unix en lugar de TCP.",
+      "Validar desde la aplicación autorizada que el servicio responde."
+    ],
+    "warnings": [
+      "Una base de datos puede funcionar perfectamente sin escuchar en TCP/3306."
+    ]
+  },
+  {
+    "code": "DC-DB-002",
+    "title": "Puerto TCP 3306 con proceso no identificado",
+    "category": "database",
+    "automatic": true,
+    "severity": "info",
+    "checks": [
+      "Identificar localmente el proceso que mantiene el socket, sin exportar detalles de otros servicios.",
+      "Verificar si corresponde a contenedor, proxy o motor de base de datos.",
+      "Contrastar con la configuración autorizada de la aplicación."
+    ],
+    "warnings": [
+      "No asumir compromiso o actividad maliciosa por un nombre de proceso distinto."
+    ]
+  },
+  {
+    "code": "DC-SSH-001",
+    "title": "No se observó proceso sshd",
+    "category": "processes",
+    "automatic": true,
+    "severity": "info",
+    "checks": [
+      "Verificar si SSH utiliza otro ejecutable, inetd, socket activation o un contenedor.",
+      "Comprobar estado del servicio desde la consola local autorizada.",
+      "Distinguir entre ausencia en ps y una conexión SSH fallida por red o credenciales."
+    ],
+    "warnings": [
+      "No concluir «SSH caído» solo por un recuento cero."
+    ]
+  },
+  {
+    "code": "DC-DISK-003",
+    "title": "Posible agotamiento de inodos",
+    "category": "disk",
+    "automatic": false,
+    "severity": "manual",
+    "checks": [
+      "Consultar df -i localmente.",
+      "Comparar con cantidad de archivos pequeños y comportamiento de aplicaciones.",
+      "Planear limpieza selectiva solo tras identificar propietario y utilidad."
+    ],
+    "warnings": [
+      "El prototipo actual no recopila inodos."
+    ]
+  },
+  {
+    "code": "DC-DISK-004",
+    "title": "Posible error de almacenamiento o I/O",
+    "category": "disk",
+    "automatic": false,
+    "severity": "manual",
+    "checks": [
+      "Revisar salud de unidades cuando existan utilidades y permisos adecuados.",
+      "Comparar errores del kernel relacionados con almacenamiento.",
+      "Registrar si el problema aparece en arranque o bajo carga."
+    ],
+    "warnings": [
+      "No ejecutar pruebas destructivas de disco. El prototipo no recopila SMART ni latencia."
+    ]
+  },
+  {
+    "code": "DC-SYS-003",
+    "title": "Posibles errores del kernel",
+    "category": "system",
+    "automatic": false,
+    "severity": "manual",
+    "checks": [
+      "Revisar eventos recientes de kernel en una consola local autorizada.",
+      "Correlacionar tiempos con incidentes y reinicios.",
+      "Revisar actualizaciones o cambios de hardware anteriores."
+    ],
+    "warnings": [
+      "El prototipo no extrae logs del kernel; no inventar evidencia."
+    ]
+  },
+  {
+    "code": "DC-SYS-004",
+    "title": "Posible problema de sincronización horaria",
+    "category": "system",
+    "automatic": false,
+    "severity": "manual",
+    "checks": [
+      "Consultar hora local/UTC y fuente de sincronización.",
+      "Comparar con una fuente horaria independiente.",
+      "Evaluar impacto en TLS, autenticación y logs."
+    ],
+    "warnings": [
+      "El prototipo no comprueba NTP."
+    ]
+  },
+  {
+    "code": "DC-NET-001",
+    "title": "Posible problema de DNS",
+    "category": "network",
+    "automatic": false,
+    "severity": "manual",
+    "checks": [
+      "Comparar resolución DNS desde una estación autorizada y desde el servidor.",
+      "Distinguir errores DNS de fallos TCP y de autenticación.",
+      "Revisar registros de resolvedores solo tras autorización."
+    ],
+    "warnings": [
+      "El prototipo no realiza consultas DNS activas por defecto."
+    ]
+  },
+  {
+    "code": "DC-NET-002",
+    "title": "Posible problema de conectividad",
+    "category": "network",
+    "automatic": false,
+    "severity": "manual",
+    "checks": [
+      "Distinguir ausencia de respuesta ICMP de un puerto filtrado.",
+      "Corroborar rutas y estado de interfaces con herramientas de lectura.",
+      "Solicitar pruebas desde otra ubicación si procede."
+    ],
+    "warnings": [
+      "No declarar un host caído por ausencia de ping."
+    ]
+  },
+  {
+    "code": "DC-APP-001",
+    "title": "Servicio o aplicación que deja de responder",
+    "category": "applications",
+    "automatic": false,
+    "severity": "manual",
+    "checks": [
+      "Definir endpoint y condición verificable sin compartir credenciales.",
+      "Relacionar tiempos de respuesta con carga, memoria y almacenamiento.",
+      "Revisar logs solo localmente y con autorización."
+    ],
+    "warnings": [
+      "El prototipo no hace health checks de aplicaciones."
+    ]
+  },
+  {
+    "code": "DC-SEC-001",
+    "title": "Repetidos fallos de autenticación",
+    "category": "security",
+    "automatic": false,
+    "severity": "manual",
+    "checks": [
+      "Consultar conteos agregados de intentos fallidos con autorización.",
+      "Comprobar si hay cambios de IP o reglas de acceso sin exponer información identificable.",
+      "Recomendar MFA y controles de acceso si resultan adecuados."
+    ],
+    "warnings": [
+      "No interpretar un fallo de acceso como ataque sin más contexto."
+    ]
+  },
+  {
+    "code": "DC-JOB-001",
+    "title": "Tarea programada que no se ejecuta",
+    "category": "jobs",
+    "automatic": false,
+    "severity": "manual",
+    "checks": [
+      "Confirmar que la tarea esté programada y que exista el usuario correcto.",
+      "Revisar la última ejecución y su código de salida con autorización.",
+      "Distinguir fallo de ejecución de pérdida de correo de notificación."
+    ],
+    "warnings": [
+      "El prototipo no inspecciona cron ni timers actualmente."
+    ]
+  },
+  {
+    "code": "DC-BACKUP-001",
+    "title": "Copia de seguridad incompleta o no validada",
+    "category": "backups",
+    "automatic": false,
+    "severity": "manual",
+    "checks": [
+      "Verificar fecha de último respaldo y resultado de restauración de prueba.",
+      "Corroborar espacio de destino y política de retención.",
+      "Considerar copias aisladas y verificaciones de integridad."
+    ],
+    "warnings": [
+      "No afirmar que existe una copia válida sin una prueba de restauración."
+    ]
+  }
+]
