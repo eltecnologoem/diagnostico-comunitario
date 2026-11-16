@@ -6,6 +6,49 @@
 **Sitio del proyecto y divulgación:** [eliezermolina.org](https://eliezermolina.org)  
 **Estado del repositorio:** fase de diseño y preparación del código comunitario; las funciones descritas a continuación constituyen objetivos, no funcionalidades ya certificadas.
 
+## Nueva edición asistida v0.2.0 (laboratorio)
+
+**Para usuarios sin experiencia:** un asistente local en Python 3 (biblioteca estándar) configura conexiones SSH, ejecuta el colector comunitario, interpreta métricas mediante reglas deterministas y abre un informe HTML privado sin conexión a servicios externos.
+
+**Linux/macOS — instalación y primer uso:**
+
+```sh
+git clone https://github.com/eltecnologoem/diagnostico-comunitario.git
+cd diagnostico-comunitario
+python3 diagnostico.py
+```
+
+**Windows — PowerShell (necesita Python 3 y OpenSSH):**
+
+```powershell
+git clone https://github.com/eltecnologoem/diagnostico-comunitario.git
+cd diagnostico-comunitario
+py -3 diagnostico.py
+```
+
+El asistente solicita solo los datos necesarios: alias, host/IP, puerto SSH, usuario y autenticación por ssh-agent, llave (ruta local) o contraseña interactiva. **No guarda contraseñas**. La conexión exige una huella SSH conocida y verificada; no desactiva el control de identidad.
+
+Una vez configurado, desde **una terminal local de confianza, no dentro del entorno de Codex**:
+
+```sh
+python3 diagnostico.py ejecutar --perfil servidor-01
+python3 diagnostico.py ejecutar --perfil servidor-01 --only memory,disk
+python3 diagnostico.py ejecutar --local              # solo Linux/macOS con soporte Linux /proc
+python3 diagnostico.py guias                     # guías públicas sin datos reales
+python3 diagnostico.py guias --codigo DC-DISK-001
+```
+
+Los archivos JSON y HTML se guardan fuera del checkout, en un directorio privado de la cuenta del usuario. El análisis local consulta **20 guías**: 10 reglas automáticas y 10 procedimientos de investigación manual. No ejecuta reparaciones.
+
+**Codex:** hemos preparado una Skill en [`.agents/skills/diagnostico-comunitario/SKILL.md`](.agents/skills/diagnostico-comunitario/SKILL.md) para explicar procedimientos sin solicitar credenciales o resultados reales. **No hay todavía un broker de aislamiento automatizado:** Codex no debe ejecutar la captura real si comparte acceso con las credenciales y diagnósticos. La Skill no impide técnicamente que un agente con permisos de sistema lea archivos privados.
+
+- [Guía de primeros pasos](docs/guia-principiantes.md)
+- [Modelo de seguridad y límites](docs/seguridad-modelo.md)
+- [Catálogo de conocimiento](knowledge/catalog.json)
+- [Suite de pruebas](tests/test_diagnostico_app.py)
+
+**Estado:** prototipo para laboratorio; SSH real multiplataforma y aislamiento frente a agentes todavía no certificados.
+
 ## Primer prototipo ejecutable: diagnóstico local
 
 Ya está disponible un **prototipo v0.1.0 para pruebas**. En Linux, desde el repositorio clonado y tras revisar el script:
