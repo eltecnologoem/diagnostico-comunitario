@@ -165,6 +165,32 @@ class HardeningTests(unittest.TestCase):
                 self.assertEqual(len(list(folder.glob('pending-*.json'))),0)
                 self.assertEqual(len(list(folder.glob('completed-*.json'))),1)
 
+    def test_rollback_refuses_external_runtime_changes(self):
+        with tempfile.TemporaryDirectory() as td:
+            folder=Path(td)/'rootstate';folder.mkdir()
+            managed=Path(td)/'managed.conf'
+            values={'fs.protected_hardlinks':'0'}
+            with mock.patch.object(hard,'STATE_DIR',folder),\
+                 mock.patch.object(hard,'MANAGED',managed),\
+                 mock.patch.object(hard,'secure_state',return_value=folder),\
+                 mock.patch.object(hard,'require_operator'),\
+                 mock.patch.object(hard,'current',side_effect=lambda k:values[k]),\
+                 mock.patch.object(hard,'set_runtime',side_effect=lambda k,v:values.__setitem__(k,v)):
+                hard.apply(['fs.protected_hardlinks'])
+                pending=list(folder.glob('pending-*.json'))
+                self.assertEqual(len(pending),1)
+                op=pending[0].stem.split('-',1)[1]
+                # Simulate an authorized administrator changing the runtime.
+                values['fs.protected_hardlinks']='2'
+                with self.assertRaises(hard.HardeningError):
+                    hard.rollback(op)
+                self.assertTrue(managed.exists())
+                self.assertTrue(pending[0].exists())
+                self.assertEqual(values['fs.protected_hardlinks'],'2')
+                values['fs.protected_hardlinks']='1'
+                hard.rollback(op)
+                self.assertFalse(managed.exists())
+
     def test_existing_foreign_sysctl_not_overwritten(self):
         with tempfile.TemporaryDirectory() as td:
             file=Path(td)/'managed.conf';file.write_text('kernel.dmesg_restrict=0\n')
