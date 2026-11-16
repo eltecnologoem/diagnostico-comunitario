@@ -10,7 +10,6 @@ from __future__ import annotations
 import argparse
 import base64
 import datetime as dt
-import fcntl
 import hashlib
 import json
 import os
@@ -156,6 +155,7 @@ def plan():
 
 def apply(controls):
     require_operator('apply')
+    import fcntl  # Linux-only; avoids import failure for Windows users inspecting --plan
     folder=secure_state()
     # Keep exactly one outstanding state to avoid ambiguous rollback ordering.
     with (folder/'lock').open('a+b') as lock:
@@ -195,6 +195,7 @@ def apply(controls):
 
 
 def rollback(operation_id):
+    import fcntl  # Linux-only; rollback requires operator confirmation
     if not re.fullmatch('[0-9a-f]{32}',operation_id):raise HardeningError('ID de respaldo inválido')
     require_operator('rollback')
     folder=secure_state()
