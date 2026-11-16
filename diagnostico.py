@@ -25,6 +25,8 @@ import webbrowser
 ROOT = Path(__file__).resolve().parent
 COLLECTOR = ROOT / 'bin' / 'serverdiag.sh'
 CATALOG = ROOT / 'knowledge' / 'catalog.json'
+EXTENDED_COLLECTOR = ROOT / 'bin' / 'audit-extended.sh'
+EXTENDED_ANALYZER = ROOT / 'tools' / 'analyze-extended.py'
 SECTIONS = ('system', 'memory', 'disk', 'database', 'processes')
 MAX_JSON_BYTES = 2 * 1024 * 1024
 
@@ -228,7 +230,7 @@ def collect(home: Path, only: str, profile: dict | None):
         raise DiagnosticError('No se encontró el colector Bash del proyecto')
     if profile is None:
         if not sys.platform.startswith('linux'):
-            raise DiagnosticError('Diagnóstico local requiere Linux; desde Windows o macOS utiliza SSH hacia Linux')
+            raise DiagnosticError('Diagnóstico local requiere Linux; desde macOS o Windows usa SSH')
         if not shutil.which('sh'):
             raise DiagnosticError('Este equipo no dispone de sh')
         argv = ['sh', str(COLLECTOR), '--stdout', '--only', only]
@@ -403,6 +405,65 @@ def run_diagnostic(home:Path, profile_alias, only, local, open_view):
     return 0
 
 
+def collect_extended(home: Path, profile: dict | None):
+    """Audit additional read-only metrics: never prints raw SSH stdout/stderr."""
+    import importlib.util
+    if not EXTENDED_COLLECTOR.is_file() or not EXTENDED_ANALYZER.is_file():
+        raise DiagnosticError('Faltan módulos de auditoría extendida')
+    reports=safe_dir(safe_dir(home)/'reports')
+    if profile is None:
+        if not sys.platform.startswith('linux'):
+            raise DiagnosticError('Auditoría local requiere Linux; desde Windows/macOS usa --perfil')
+        argv=['sh',str(EXTENDED_COLLECTOR),'--stdout']
+    else:
+        argv=ssh_argv(profile,'system')
+        argv[-1]='sh -s -- --stdout'
+    fd,tempname=tempfile.mkstemp(prefix='.extended-',dir=reports)
+    try:
+        with os.fdopen(fd,'wb') as captured, tempfile.TemporaryFile() as errors:
+            kwargs=dict(stdout=captured,stderr=errors,timeout=75,check=False,env=narrow_ssh_env())
+            if profile is not None:
+                kwargs['input']=EXTENDED_COLLECTOR.read_bytes()
+            result=subprocess.run(argv,**kwargs)
+            if result.returncode:
+                raise DiagnosticError('La auditoría extendida no pudo completarse. Verifica permisos y la conexión SSH fuera de Codex.')
+        raw=Path(tempname).read_bytes()
+        if len(raw)>64*1024:raise DiagnosticError('La auditoría extendida excede el límite de tamaño')
+        spec=importlib.util.spec_from_file_location('serverdiag_extended_analyzer',EXTENDED_ANALYZER)
+        module=importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        obj=json.loads(raw,object_pairs_hook=reject_duplicates,
+                       parse_constant=lambda _: (_ for _ in ()).throw(ValueError('Número no finito')))
+        module.validate(obj)
+        name='auditoria-'+dt.datetime.now(dt.timezone.utc).strftime('%Y%m%dT%H%M%SZ')+'-'+secrets.token_hex(5)
+        path=reports/(name+'.json')
+        private_write(path,raw)
+        private_write(path.with_suffix('.html'),module.render_html(obj,module.analyze(obj)).encode('utf-8'))
+        return path
+    except subprocess.TimeoutExpired as exc:
+        raise DiagnosticError('Tiempo de espera de auditoría extendida agotado') from exc
+    except (ValueError,UnicodeError,TypeError) as exc:
+        raise DiagnosticError('La auditoría extendida no devolvió el contrato JSON esperado') from exc
+    finally:
+        Path(tempname).unlink(missing_ok=True)
+
+
+def run_extended(home:Path, profile_alias, local, open_view):
+    if bool(local)==bool(profile_alias):
+        raise DiagnosticError('Indica --local o --perfil ALIAS')
+    profile=None
+    if not local:
+        profiles=read_profiles(home)
+        if profile_alias not in profiles:
+            raise DiagnosticError('Perfil no encontrado; ejecuta configurar')
+        profile=profiles[profile_alias]
+    path=collect_extended(home,profile)
+    print('Auditoría extendida completada; JSON y HTML privados almacenados localmente.')
+    if open_view:
+        webbrowser.open(path.with_suffix('.html').as_uri())
+    return 0
+
+
 def list_guides(code=None):
     catalog=load_catalog()
     if code:
@@ -447,6 +508,10 @@ def main(argv=None):
     p.add_argument('--local', action='store_true',help='Ejecuta diagnóstico en este Linux')
     p.add_argument('--only',default=','.join(SECTIONS),help='system,memory,disk,database,processes')
     p.add_argument('--no-abrir',action='store_true',help='No abrir visor privado al terminar')
+    p=sub.add_parser('auditar',help='Auditoría extendida de fiabilidad y hardening (solo lectura)')
+    p.add_argument('--perfil',help='Alias SSH configurado')
+    p.add_argument('--local',action='store_true',help='Audita este equipo Linux')
+    p.add_argument('--no-abrir',action='store_true',help='No abre el visor HTML')
     p=sub.add_parser('guias', help='Consulta documentación pública sin datos de servidores')
     p.add_argument('--codigo',help='Código de guía (p.ej. DC-DISK-001)')
     p=sub.add_parser('comparar',help='Compara dos JSON privados en terminal local de confianza')
@@ -464,6 +529,8 @@ def main(argv=None):
             if args.local and args.perfil:
                 raise DiagnosticError('--local y --perfil son excluyentes')
             return run_diagnostic(home,args.perfil,args.only,args.local,not args.no_abrir)
+        elif args.command=='auditar':
+            return run_extended(home,args.perfil,args.local,not args.no_abrir)
         elif args.command=='guias':
             list_guides(args.codigo)
         elif args.command=='comparar':
