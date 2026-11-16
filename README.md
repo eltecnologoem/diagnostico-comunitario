@@ -20,14 +20,14 @@ La situación es todavía más complicada cuando el administrador, un técnico e
 - **Diagnósticos difíciles de comparar:** usar un esquema JSON versionado que permita comparar dos ejecuciones y detectar cambios relevantes.
 - **Conclusiones precipitadas:** distinguir observaciones verificadas, datos desconocidos, hipótesis y acciones recomendadas; la ausencia de datos no demuestra ausencia de incidentes.
 - **Exposición de información sensible:** mantener los datos completos bajo control del propietario y crear exportaciones compartibles mediante listas explícitas de campos permitidos.
-- **Dependencia de una plataforma:** permitir el uso local sin cuentas y dejar que personas, visores, agentes de IA o herramientas como WHMCS consuman el mismo contrato de datos.
+- **Dependencia de una plataforma:** permitir el uso local sin cuentas y ofrecer un contrato de datos abierto para personas, visores, agentes de IA y herramientas comunitarias independientes.
 
 ## Principios del proyecto
 
 1. **Local primero.** El Bash guarda el JSON en el propio servidor. **No envía información a ningún destino por defecto.**
 2. **Solo lectura durante el diagnóstico.** No repara, reinicia, instala paquetes, modifica red/firewall ni ejecuta órdenes remotas. Los cambios de instalación o programación, si se ofrecen, deberán ser explícitos y estar separados del diagnóstico.
 3. **Privacidad por diseño.** El informe privado y la exportación compartible son objetos distintos; la copia pública se construye desde una lista cerrada de campos, no mediante tachado de un informe confidencial.
-4. **Formato común, consumidores independientes.** El recolector no depende de WHMCS, una nube, una sesión web ni un agente de IA.
+4. **Formato común, consumidores independientes.** El recolector no depende de una nube, una cuenta, una sesión web ni un agente de IA.
 5. **Evidencia antes de inferencias.** Cada hallazgo debe señalar el dato, la hora y las limitaciones que lo sustentan.
 6. **Sin accesos ocultos.** El visor y el MCP no pueden enviar comandos al servidor diagnosticado ni solicitar credenciales SSH.
 
@@ -47,9 +47,9 @@ Se estudia una vista temporal en `preview-diagnosis.eliezermolina.org`. La propu
 
 El primer MCP previsto será **local y de solo lectura**, con herramientas para listar capturas, consultar métricas, recuperar hallazgos y comparar dos momentos. No ejecutará comandos ni accederá a rutas fuera de una carpeta autorizada. Si el usuario conecta el MCP a un modelo externo, deberá revisar qué datos se transmiten a ese modelo: un MCP local no implica necesariamente inferencia local.
 
-### WHMCS y servicios administrados
+### Monitoreo autogestionado (fase posterior)
 
-WHMCS será un consumidor opcional de reportes e historial, no un controlador remoto de los equipos. La recepción periódica mediante una API privada y el conector WHMCS se estudiarán como una fase posterior. **«Sin datos recibidos» no significa «servidor caído».** Una comprobación de disponibilidad externa debe ser independiente.
+Se estudiará una API privada y autoalojable para recibir capturas periódicas desde servidores autorizados mediante credenciales limitadas a escritura. Esta capacidad será independiente del diagnóstico local y no requerirá un sistema comercial de gestión. El administrador controlará su instancia y los períodos de retención. **«Sin datos recibidos» no significa «servidor caído».** Para comprobar disponibilidad real se necesitará una señal externa e independiente.
 
 ## Desarrollo con OpenAI Codex
 
@@ -66,11 +66,11 @@ Las instrucciones operativas para colaboradores y agentes están en [`AGENTS.md`
 
 ## Hoja de ruta orientativa
 
-- **Hito 0 — Auditoría:** recuperar y revisar el recolector histórico de julio, su formato JSON y cualquier conector existente. Separar lo implementado de lo documentado.
+- **Hito 0 — Auditoría:** recuperar y revisar el recolector histórico de julio y su formato JSON. Separar lo implementado de lo documentado y confirmar el comportamiento de solo lectura.
 - **Hito 1 — MVP local:** recolector de solo lectura, esquema JSON privado, exportador compartible por allowlist, visor local y comparación entre capturas.
 - **Hito 2 — Integración con agentes:** MCP local con permisos restrictivos, pruebas de aislamiento y entradas no confiables.
 - **Hito 3 — Vista temporal:** servicio optativo, autenticación por correo, expiración, borrado y pruebas de autorización cruzada.
-- **Hito 4 — Administración:** API privada de ingesta periódica y evaluación del conector WHMCS.
+- **Hito 4 — Monitoreo autogestionado:** evaluar una API privada de ingesta periódica y un historial autoalojable, sin dependencias de plataformas comerciales.
 
 Ningún hito se considerará terminado solamente porque exista una interfaz o una demostración visual.
 
