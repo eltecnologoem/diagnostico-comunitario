@@ -6,6 +6,54 @@
 **Sitio del proyecto y divulgación:** [eliezermolina.org](https://eliezermolina.org)  
 **Estado del repositorio:** fase de diseño y preparación del código comunitario; las funciones descritas a continuación constituyen objetivos, no funcionalidades ya certificadas.
 
+## Auditoría extendida y hardening v0.3.0 (laboratorio)
+
+Esta ampliación añade **diagnóstico de fallos de Linux y evaluación de hardening** para Debian/Ubuntu, sin cambiar el servidor durante la recolección. Es independiente del recolector básico y de cualquier función de inteligencia artificial. No es una auditoría CIS ni un sustituto de pruebas de penetración.
+
+**Auditar en Debian/Ubuntu local:**
+
+```bash
+python3 diagnostico.py auditar --local
+```
+
+**Auditar un servidor Linux remoto (desde Windows, macOS o Linux, con perfil SSH previamente aprobado):**
+
+```bash
+python3 diagnostico.py auditar --perfil servidor-01
+```
+
+**Alternativa Bash directa en Linux, sin Python en el servidor:**
+
+```bash
+sh bin/audit-extended.sh
+```
+
+La auditoría observa inodos, filesystem raíz read-only, procesos bloqueados/zombies, fallos de systemd, indicadores básicos de red, NTP, políticas globales SSH, AppArmor, actualizaciones y controles de sysctl. También incluye **una muestra limitada de errores del kernel** (hasta 300 entradas/24 h), contando referencias a OOM y errores I/O **sin incluir las líneas originales**. Cuando faltan datos, usa `null` o `unavailable`, nunca un cero inventado.
+
+El asistente genera **JSON y HTML privados**, sin scripts ni recursos externos, en el directorio de datos privado del usuario. Los archivos completos no deben entregarse a Codex ni publicarse en GitHub.
+
+### Hardening: revisar antes de aplicar
+
+**Solo para un operador experimentado**, con consola de recuperación y evaluación de compatibilidad:
+
+```bash
+python3 tools/hardening.py --list
+python3 tools/hardening.py --plan
+```
+
+Estas órdenes **son de lectura**. La aplicación es otra acción, separada del diagnóstico, disponible exclusivamente desde una terminal interactiva autorizada como root en Debian/Ubuntu; exige escribir una confirmación literal, crea un respaldo y permite rollback. Se limita a cuatro sysctls aprobados: `fs.protected_hardlinks`, `fs.protected_symlinks`, `kernel.dmesg_restrict` y `kernel.kptr_restrict`.
+
+**No habilita ni deshabilita SSH, firewall, servicios, cuentas, actualizaciones o paquetes.** No ejecutar cambios de hardening por Codex ni permitirle acceder a datos reales del diagnóstico.
+
+- [Guía de auditoría extendida y hardening](docs/auditoria-hardening.md)
+- [Script de auditoría read-only](bin/audit-extended.sh)
+- [Analizador local extendido](tools/analyze-extended.py)
+- [Hardening opt-in con respaldo y reversión](tools/hardening.py)
+- [Pruebas sintéticas y de rollback](tests/test_extended_hardening.py)
+- [Política de seguridad](SECURITY.md)
+
+**Estado:** prototipo en evaluación. El SSH real, el hardening en hosts productivos y el aislamiento de credenciales frente a Codex siguen pendientes de validación independiente.
+
 ## Nueva edición asistida v0.2.0 (laboratorio)
 
 **Para usuarios sin experiencia:** un asistente local en Python 3 (biblioteca estándar) configura conexiones SSH, ejecuta el colector comunitario, interpreta métricas mediante reglas deterministas y abre un informe HTML privado sin conexión a servicios externos.
