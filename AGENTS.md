@@ -25,6 +25,20 @@ Desarrollar una herramienta comunitaria de diagnóstico Linux de solo lectura, l
 - Separar hecho, hipótesis y recomendación; no inferir caída del servidor por ausencia de reporte.
 - No introducir dependencias pesadas sin justificar beneficios, riesgos, mantenimiento y pruebas.
 
+## Límite de confianza al diagnosticar servidores reales
+
+El agente Codex trabaja con **código público, esquemas y fixtures sintéticos**. No está autorizado a obtener secretos ni resultados de un servidor real durante el desarrollo.
+
+- No leer, listar, abrir ni imprimir `.env` reales, variables de entorno SSH, llaves privadas, `known_hosts` operacionales, informes privados, sockets o directorios del broker.
+- No invocar `ssh`, `remote-collect.sh` ni el recolector contra un equipo real desde el proceso de Codex. No introducir valores reales en comandos, pruebas, prompts, logs o pull requests.
+- La automatización de diagnósticos reales será responsabilidad de un servicio local separado con UID, filesystem y credenciales aislados. Codex solo podrá pedir una operación sobre un **alias previamente autorizado** y recibir un estado genérico sin información del equipo.
+- Los reportes completos y los hallazgos reales permanecerán en el ejecutor y analizador locales. **No devolver contenidos, métricas, códigos de hallazgos reales ni identificadores al modelo** en modo estricto.
+- Nunca asumir que un `.env` oculto por `.gitignore` está protegido frente a un agente con acceso a archivos, comandos, logs o variables del proceso.
+- No marcar la integración segura como implementada hasta superar las pruebas de aislamiento de `docs/codex-secure-workflow.md`.
+- Si una tarea exige analizar datos reales con Codex, detenerse y explicar que contradice el modo de privacidad estricta; requerirá un modo de consentimiento distinto que no está implementado.
+
+**Política normativa:** [`SECURITY.md`](SECURITY.md). **Diseño del broker:** [`docs/codex-secure-workflow.md`](docs/codex-secure-workflow.md).
+
 ## Flujo de Codex recomendado
 
 1. Leer README y especificaciones del componente solicitado.
