@@ -46,6 +46,7 @@ Estas órdenes **son de lectura**. La aplicación es otra acción, separada del 
 **No habilita ni deshabilita SSH, firewall, servicios, cuentas, actualizaciones o paquetes.** No ejecutar cambios de hardening por Codex ni permitirle acceder a datos reales del diagnóstico.
 
 - [Guía de auditoría extendida y hardening](docs/auditoria-hardening.md)
+- [Baseline por prioridades para Debian y Ubuntu](docs/hardening-baseline-debian-ubuntu.md)
 - [Script de auditoría read-only](bin/audit-extended.sh)
 - [Analizador local extendido](tools/analyze-extended.py)
 - [Hardening opt-in con respaldo y reversión](tools/hardening.py)
