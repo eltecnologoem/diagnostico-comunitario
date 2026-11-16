@@ -9,9 +9,15 @@ export LC_ALL
 usage() {
   cat <<'EOF'
 Uso:
-  sh bin/serverdiag.sh [--output ARCHIVO] [--app-dir RUTA]
-  sh bin/serverdiag.sh --stdout [--app-dir RUTA]
+  sh bin/serverdiag.sh [--only SECCIONES] [--output ARCHIVO] [--app-dir RUTA]
+  sh bin/serverdiag.sh --email [--env ARCHIVO_ENV] [--only SECCIONES]
+  sh bin/serverdiag.sh --stdout [--only SECCIONES]
 
+SECCIONES: system,memory,disk,database,processes (separadas por coma).
+--only limita las comprobaciones; las secciones no elegidas se marcan skipped.
+--email envia SOLO la copia compartible via SMTP, nunca el JSON privado.
+--env especifica un .env de SMTP (por defecto ./.env); no se ejecuta como shell.
+--email requiere el repositorio completo, Python 3 y consentimiento explicito.
 Por defecto crea ./serverdiag-<UTC>-<PID>.json con permisos 0600.
 --stdout escribe SOLO JSON a stdout (util para 'ssh ... sh -s -- --stdout').
 --app-dir inspecciona opcionalmente RUTA/mysql/bin en modo lectura.
@@ -22,6 +28,10 @@ EOF
 output=''
 stdout_mode=0
 app_dir=''
+selected='system,memory,disk,database,processes'
+email_mode=0
+env_file='./.env'
+env_supplied=0
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --output)
@@ -31,12 +41,42 @@ while [ "$#" -gt 0 ]; do
     --app-dir)
       [ "$#" -ge 2 ] || { echo 'Falta ruta en --app-dir' >&2; exit 2; }
       app_dir=$2; shift 2 ;;
+    --only)
+      [ "$#" -ge 2 ] || { echo 'Faltan secciones en --only' >&2; exit 2; }
+      selected=$2; shift 2 ;;
+    --email) email_mode=1; shift ;;
+    --env)
+      [ "$#" -ge 2 ] || { echo 'Falta ruta en --env' >&2; exit 2; }
+      env_file=$2; env_supplied=1; shift 2 ;;
     --help|-h) usage; exit 0 ;;
     *) echo "Parametro desconocido: $1" >&2; usage >&2; exit 2 ;;
   esac
 done
 [ "$stdout_mode" -eq 0 ] || [ -z "$output" ] || { echo 'No combinar --stdout y --output' >&2; exit 2; }
 [ -z "$app_dir" ] || [ -d "$app_dir" ] || { echo 'La carpeta de --app-dir no existe' >&2; exit 2; }
+[ "$stdout_mode" -eq 0 ] || [ "$email_mode" -eq 0 ] || { echo '--email no puede combinarse con --stdout' >&2; exit 2; }
+[ "$email_mode" -eq 1 ] || [ "$env_supplied" -eq 0 ] || { echo '--env requiere --email' >&2; exit 2; }
+
+case "$selected" in ''|,*|*,|*,,*|*[!a-z,]*)
+  echo 'Secciones invalidas en --only' >&2; exit 2 ;;
+esac
+old_ifs=$IFS
+IFS=,
+# Una lista con elementos duplicados no afecta los resultados.
+set -- $selected
+IFS=$old_ifs
+for part do
+  case "$part" in
+    system|memory|disk|database|processes) ;;
+    *) echo "Seccion no soportada: $part" >&2; exit 2 ;;
+  esac
+done
+section_enabled() {
+  case ",$selected," in
+    *,"$1",*) return 0 ;;
+    *) return 1 ;;
+  esac
+}
 
 # Cadenas JSON restringidas a ASCII sin comillas ni controles.
 safe_id() { printf '%s' "$1" | tr -cd 'A-Za-z0-9._:/+@-'; }
@@ -80,14 +120,19 @@ kernel_id=$(safe_id "$(uname -r 2>/dev/null || printf 'unknown')" | cut -c 1-120
 if [ "$(id -u)" = 0 ]; then priv='root'; else priv='unprivileged'; fi
 
 uptime_s=null
-if [ -r /proc/uptime ]; then
+if section_enabled system && [ -r /proc/uptime ]; then
   uptime_s=$(awk '{printf "%.0f",$1;exit}' /proc/uptime 2>/dev/null || printf null)
 fi
-cpu_cores=$(getconf _NPROCESSORS_ONLN 2>/dev/null || printf null)
+cpu_cores=null
 load_1m=null
-if [ -r /proc/loadavg ]; then load_1m=$(awk '{print $1;exit}' /proc/loadavg); fi
+if section_enabled system; then
+  cpu_cores=$(getconf _NPROCESSORS_ONLN 2>/dev/null || printf null)
+  if [ -r /proc/loadavg ]; then load_1m=$(awk '{print $1;exit}' /proc/loadavg); fi
+fi
 
 mem_total=null; mem_available=null; swap_total=null; swap_free=null
+mem_status=skipped
+if section_enabled memory; then
 mem_status=unavailable
 if [ -r /proc/meminfo ]; then
   mem_line=$(awk '
@@ -102,8 +147,11 @@ if [ -r /proc/meminfo ]; then
     mem_status=collected
   fi
 fi
+fi
 
 root_total=null; root_used=null; root_available=null; root_used_pct=null
+disk_status=skipped
+if section_enabled disk; then
 disk_status=unavailable
 if command -v df >/dev/null 2>&1; then
   df_line=$(df -Pk / 2>/dev/null | awk 'NR==2 && $2~/^[0-9]+$/ && $3~/^[0-9]+$/ && $4~/^[0-9]+$/ {gsub(/%/,"",$5); if($5~/^[0-9]+$/) printf "%.0f %.0f %.0f %s", $2*1024,$3*1024,$4*1024,$5}')
@@ -112,23 +160,35 @@ if command -v df >/dev/null 2>&1; then
     disk_status=collected
   fi
 fi
+fi
 
-mysql_client=$(bool_from_binary mysql)
-mariadb_client=$(bool_from_binary mariadb)
+mysql_client=null
+mariadb_client=null
+if section_enabled database; then
+  mysql_client=$(bool_from_binary mysql)
+  mariadb_client=$(bool_from_binary mariadb)
+fi
 mysql_process_count=null
 ssh_process_count=null
+process_status=skipped
+if section_enabled database || section_enabled processes; then
 process_status=unavailable
 if command -v ps >/dev/null 2>&1; then
   process_line=$(ps -eo comm= 2>/dev/null | awk '
     {p=$1;sub(/^.*\//,"",p);if(p=="mysqld"||p=="mariadbd") m++;if(p=="sshd") s++}
     END {printf "%d %d",m+0,s+0}' )
   if [ -n "$process_line" ]; then
-    set -- $process_line; mysql_process_count=$1; ssh_process_count=$2
+    set -- $process_line
+    if section_enabled database; then mysql_process_count=$1; fi
+    if section_enabled processes; then ssh_process_count=$2; fi
     process_status=collected
   fi
 fi
+fi
 
 tcp_3306_listening=null
+listeners_status=skipped
+if section_enabled database; then
 listeners_status=unavailable
 if command -v ss >/dev/null 2>&1; then
   ss_line=$(ss -H -ltn 2>/dev/null)
@@ -138,9 +198,10 @@ if command -v ss >/dev/null 2>&1; then
     listeners_status=collected
   fi
 fi
+fi
 
 embedded_mysql_present=null
-if [ -n "$app_dir" ]; then
+if section_enabled database && [ -n "$app_dir" ]; then
   embedded_mysql_present=false
   if [ -x "$app_dir/mysql/bin/mysqld" ] || [ -x "$app_dir/mysql/bin/mariadbd" ] || [ -x "$app_dir/mysql/bin/mysql" ]; then
     embedded_mysql_present=true
@@ -148,7 +209,7 @@ if [ -n "$app_dir" ]; then
 fi
 
 findings='[]'
-if [ "$root_used_pct" != null ] && [ "$root_used_pct" -ge 90 ] 2>/dev/null; then
+if section_enabled disk && [ "$root_used_pct" != null ] && [ "$root_used_pct" -ge 90 ] 2>/dev/null; then
   findings='[{"code":"disk_root_high","severity":"warning","metric":"disk.root.used_percent","value":'"$root_used_pct"',"unit":"percent","threshold":90}]'
 fi
 
@@ -190,4 +251,20 @@ else
   rm -f -- "$temp"
   trap - 0
   printf 'Reporte local: %s\n' "$output"
+  if [ "$email_mode" -eq 1 ]; then
+    if ! command -v python3 >/dev/null 2>&1; then
+      echo 'No se envio correo: se requiere Python 3. El reporte privado permanece local.' >&2
+      exit 1
+    fi
+    script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd) || exit 1
+    sender="$script_dir/../tools/send-report.py"
+    if [ ! -r "$sender" ]; then
+      echo 'No se envio correo: falta tools/send-report.py del repositorio.' >&2
+      exit 1
+    fi
+    if ! python3 "$sender" --env "$env_file" "$output"; then
+      echo 'No se envio correo; el JSON privado permanece local.' >&2
+      exit 1
+    fi
+  fi
 fi
