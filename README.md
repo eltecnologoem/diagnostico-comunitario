@@ -168,6 +168,16 @@ El primer MCP previsto será **local y de solo lectura**, con herramientas para 
 
 Se estudiará una API privada y autoalojable para recibir capturas periódicas desde servidores autorizados mediante credenciales limitadas a escritura. Esta capacidad será independiente del diagnóstico local y no requerirá un sistema comercial de gestión. El administrador controlará su instancia y los períodos de retención. **«Sin datos recibidos» no significa «servidor caído».** Para comprobar disponibilidad real se necesitará una señal externa e independiente.
 
+### Uso seguro con Codex: privacidad estricta
+
+**Importante:** la versión actual permite generar diagnósticos locales, pero **todavía no implementa un ejecutor seguro para Codex**. No entregues a Codex un entorno con llaves SSH, credenciales SMTP, variables de conexión o JSON reales del servidor.
+
+Para mantener una política de **cero datos reales enviados al modelo**, Codex debe utilizar únicamente código, documentación y ejemplos sintéticos. La integración futura permitirá que Codex **solicite** un diagnóstico por alias a un broker local independiente, pero nunca leer sus secretos ni recibir el informe o hallazgos reales. Un analizador local separado procesará el JSON y mostrará las conclusiones al propietario.
+
+Guardar credenciales en `.env` no las protege frente a un agente que pueda leer dicho archivo o ejecutar comandos en el mismo entorno. También el resultado de una herramienta MCP puede entrar en el contexto de un modelo externo.
+
+Consulta la [política de seguridad](SECURITY.md) y el [diseño del flujo Codex aislado](docs/codex-secure-workflow.md), ambos normativos para el trabajo con datos reales.
+
 ## Desarrollo con OpenAI Codex
 
 Utilizaremos **Codex como asistente de ingeniería** para transformar las especificaciones en cambios pequeños, auditables y acompañados de pruebas. Codex podrá ayudar a:
