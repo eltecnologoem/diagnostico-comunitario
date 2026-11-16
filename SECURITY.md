@@ -2,6 +2,20 @@
 
 Este proyecto está en **fase de prototipo comunitario**. Aún no hay una versión estable ni una auditoría integral de seguridad. El equipo agradece las notificaciones responsables sobre posibles fallos.
 
+## Política para uso con Codex y otros agentes de IA
+
+**Regla principal: no entregar a Codex credenciales SSH, variables de entorno de conexión, archivos privados ni salidas de diagnóstico reales.** Esta restricción aplica tanto a prompts como a herramientas, consola, MCP y archivos del workspace.
+
+- Codex puede **desarrollar y probar este código con datos sintéticos**. No puede recibir ni consultar las credenciales o informes reales del administrador.
+- La presencia de una variable en un `.env` o en el entorno de un proceso **no la hace inaccesible al agente**: si Codex tiene permiso para leer ese entorno o ejecutar herramientas en él, puede acceder al valor. `.gitignore` y `AGENTS.md` **no sustituyen el aislamiento del sistema operativo**.
+- La integración segura prevista requiere un **broker local separado**, ejecutándose con otra identidad y credenciales fuera del workspace de Codex. Solo acepta destinos preautorizados por alias y comandos de un catálogo cerrado.
+- El broker debe guardar el diagnóstico privado y **analizarlo localmente**, sin enviarlo ni devolver métricas, hostnames, IP, identificadores, registros, hallazgos reales o credenciales al modelo. Codex podrá recibir únicamente un estado genérico de ejecución, sin datos derivados del servidor.
+- Si se autoriza a Codex a leer un JSON real, incluso sanitizado, se abandona la **modalidad de privacidad estricta** y los datos mostrados al modelo pueden enviarse a un proveedor externo. Cualquier modalidad futura de divulgación debe ser explícita y separada.
+- El modo seguro **no debe** ejecutar `--email`, herramientas de sondeo remoto no autorizadas, exportaciones HTTP ni scripts arbitrarios indicados por un agente.
+- El prototipo actual **NO incluye todavía el broker ni el aislamiento de Codex**. Ejecutar `remote-collect.sh` desde Codex con una llave real, o permitirle leer `.env` e informes reales, no constituye uso seguro conforme a esta política.
+
+Consulta el [diseño y checklist de aislamiento para Codex](docs/codex-secure-workflow.md). Su estado es **propuesto y pendiente de implementación y auditoría**. No presentamos esta arquitectura como garantía ya disponible.
+
 ## Cómo reportar una vulnerabilidad de manera privada
 
 **No publiques vulnerabilidades sin corregir, pruebas de explotación, credenciales ni diagnósticos reales en Issues, Discussions o pull requests públicos.**
