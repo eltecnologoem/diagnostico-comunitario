@@ -6,6 +6,42 @@
 **Sitio del proyecto y divulgación:** [eliezermolina.org](https://eliezermolina.org)  
 **Estado del repositorio:** fase de diseño y preparación del código comunitario; las funciones descritas a continuación constituyen objetivos, no funcionalidades ya certificadas.
 
+## Diagnóstico sin Python: un solo comando `sh`
+
+**Recomendado para principiantes en Debian/Ubuntu y otras distribuciones Linux compatibles.** La edición shell no requiere Python, `pip`, `jq`, una cuenta, correo ni instalar paquetes adicionales. Utiliza `/bin/sh` y herramientas habituales de Linux.
+
+Descarga el repositorio como ZIP desde GitHub, extráelo y, dentro de su carpeta, ejecuta:
+
+```sh
+sh diagnostico.sh
+```
+
+**Diagnóstico por partes:**
+
+```sh
+sh diagnostico.sh --only disk,memory
+sh diagnostico.sh --only system
+sh diagnostico.sh --only database
+sh diagnostico.sh --only processes
+sh diagnostico.sh --only extended
+sh diagnostico.sh --only disk,extended
+sh diagnostico.sh --help
+```
+
+`extended` ejecuta la auditoría avanzada completa (seguridad, red, procesos y eventos); no instala ni aplica hardening. Para elegir otra carpeta de salida:
+
+```sh
+sh diagnostico.sh --output-dir /ruta/privada
+```
+
+**Qué obtienes:** una carpeta privada bajo `$HOME/.local/state/diagnostico-comunitario/` con `basic.json`, `extended.json` e `INFORME.md` (los JSON dependen de las secciones seleccionadas). Se crean archivos de solo acceso para el propietario. **No existe envío a Internet ni ejecución remota en este comando.**
+
+La versión shell es la opción **sin dependencias adicionales obligatorias**. Las utilidades `diagnostico.py`, correo SMTP, interfaz HTML e integración asistida por SSH se mantienen separadas y pueden requerir Python o configuración específica. La ejecución local sigue requiriendo Linux; desde Windows o macOS se podrá utilizar el asistente SSH opcional.
+
+[Guía de uso de la versión shell](docs/diagnostico-shell-sin-dependencias.md) · [Código POSIX sh](diagnostico.sh) · [Pruebas automatizadas](tests/test_shell_entrypoint.py)
+
+**Estado:** prototipo para pruebas, no auditado para producción. Los informes completos son privados y pueden incluir información real del servidor; no subirlos a GitHub ni entregarlos a Codex en modo de privacidad estricta.
+
 ## Auditoría extendida y hardening v0.3.0 (laboratorio)
 
 Esta ampliación añade **diagnóstico de fallos de Linux y evaluación de hardening** para Debian/Ubuntu, sin cambiar el servidor durante la recolección. Es independiente del recolector básico y de cualquier función de inteligencia artificial. No es una auditoría CIS ni un sustituto de pruebas de penetración.
