@@ -6,6 +6,25 @@
 **Sitio del proyecto y divulgación:** [eliezermolina.org](https://eliezermolina.org)  
 **Estado del repositorio:** fase de diseño y preparación del código comunitario; las funciones descritas a continuación constituyen objetivos, no funcionalidades ya certificadas.
 
+## Consola interactiva opcional — v0.5 (laboratorio)
+
+La edición POSIX `sh` incorpora **tres opciones independientes** que no requieren Python, `jq`, `dialog` ni `whiptail`. Sin opciones, la ejecución conserva el modo discreto anterior.
+
+```sh
+sh diagnostico.sh                          # ejecución normal y salida breve
+sh diagnostico.sh --show                   # resumen ordenado en la consola
+sh diagnostico.sh --menu                   # menú de secciones (terminal interactiva)
+sh diagnostico.sh --progress               # indicador de avance
+sh diagnostico.sh --menu --show --progress  # experiencia interactiva completa
+sh diagnostico.sh --only memory,disk --show
+```
+
+En el menú puedes ingresar **`2,3,6`** para memoria, disco y auditoría extendida. La selección inválida o cancelar no genera capturas. `--menu` requiere terminal real y no puede combinarse con `--only`.
+
+`--show` presenta **métricas y hallazgos básicos ordenados**, sin volcar el JSON ni los registros; `--progress` usa una animación simple solo cuando hay terminal, y muestra líneas normales si la salida está redirigida. **Las métricas son datos reales:** activa `--show` únicamente desde una terminal de confianza; no envíes su stdout a Codex en modo de privacidad estricta.
+
+[Guía de menú, consola y progreso](docs/interfaz-consola.md) · [Pruebas de interacción](tests/test_shell_interactive.py).
+
 ## Diagnóstico sin Python: un solo comando `sh`
 
 **Recomendado para principiantes en Debian/Ubuntu y otras distribuciones Linux compatibles.** La edición shell no requiere Python, `pip`, `jq`, una cuenta, correo ni instalar paquetes adicionales. Utiliza `/bin/sh` y herramientas habituales de Linux.
